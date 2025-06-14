@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { Poop3D } from './Poop3D';
 import { EmotionState } from '../hooks/usePoopSoul';
+import { FACE_TEXTURES } from '../constants/rareforms';
 
 interface Scene3DProps {
   parameters: {
@@ -16,14 +17,6 @@ interface Scene3DProps {
   perfectionScore: number;
   decorations: string[];
 }
-
-const faceTextures = [
-  "/face-icon-05.png", // 困倦
-  "/face-icon-04.png", // 伤心
-  "/face-icon-03.png", // 平静
-  "/face-icon-02.png", // 开心
-  "/face-icon-01-.png", // 兴奋
-];
 
 export const Scene3D: React.FC<Scene3DProps> = ({
   parameters,
@@ -61,7 +54,7 @@ export const Scene3D: React.FC<Scene3DProps> = ({
             emotionState={emotionState}
             perfectionScore={perfectionScore}
             decorations={decorations}
-            selectedFaceTexture={faceTextures[parameters.face]}
+            selectedFaceTexture={FACE_TEXTURES[parameters.face]}
           />
           
           {/* 3D交互控制 - 仅用于观察，不影响游戏逻辑 */}

@@ -1,47 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-
-export interface CharacterParameters {
-  color: number;
-  length: number;
-  width: number;
-  layers: number;
-  face: number;
-}
-
-export type EmotionState = 'idle' | 'happy' | 'strained' | 'proud' | 'excited' | 'sleepy';
-
-export interface PoopSoul {
-  parameters: CharacterParameters;
-  emotionState: EmotionState;
-  perfectionScore: number;
-  isBreathing: boolean;
-  discoveredRareForm: boolean;
-  decorations: string[];
-}
-
-const RARE_COMBINATIONS = [
-  {
-    condition: (p: CharacterParameters) => 
-      p.color > 80 && p.layers > 70 && Math.abs(p.width - 61.8) < 10,
-    name: "黄金比例完美体",
-    decoration: "crown",
-    score: 0.9
-  },
-  {
-    condition: (p: CharacterParameters) => 
-      p.color > 90 && p.length > 85 && p.width > 85 && p.layers > 85,
-    name: "至尊卓越形态",
-    decoration: "halo",
-    score: 0.95
-  },
-  {
-    condition: (p: CharacterParameters) => 
-      p.face === 4 && p.color < 20 && p.length > 80,
-    name: "神秘暗影形态",
-    decoration: "sparkles",
-    score: 0.85
-  }
-];
+import { CharacterParameters, EmotionState, PoopSoul } from '../types';
+import { RARE_COMBINATIONS } from '../constants/rareforms';
+import { AudioManager } from '../utils/audioUtils';
+import { calculatePerfection } from '../utils/perfectionCalculator';
 
 export const usePoopSoul = () => {
   const [soul, setSoul] = useState<PoopSoul>({
@@ -61,13 +22,13 @@ export const usePoopSoul = () => {
 
   const breathingInterval = useRef<NodeJS.Timeout>();
   const emotionTimeout = useRef<NodeJS.Timeout>();
-  const audioContext = useRef<AudioContext>();
+  const audioManager = useRef<AudioManager>();
 
   useEffect(() => {
-    audioContext.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    audioManager.current = new AudioManager();
     return () => {
-      if (audioContext.current) {
-        audioContext.current.close();
+      if (audioManager.current) {
+        audioManager.current.destroy();
       }
     };
   }, []);
@@ -89,53 +50,6 @@ export const usePoopSoul = () => {
     };
   }, [soul.isBreathing]);
 
-  const playToneForValue = useCallback((value: number, paramType: string) => {
-    if (!audioContext.current) return;
-
-    const oscillator = audioContext.current.createOscillator();
-    const gainNode = audioContext.current.createGain();
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.current.destination);
-
-    let baseFreq = 200;
-    switch (paramType) {
-      case 'color': baseFreq = 300; break;
-      case 'length': baseFreq = 250; break;
-      case 'width': baseFreq = 200; break;
-      case 'layers': baseFreq = 350; break;
-    }
-
-    oscillator.frequency.setValueAtTime(baseFreq + (value * 3), audioContext.current.currentTime);
-    oscillator.type = 'sine';
-
-    gainNode.gain.setValueAtTime(0.1, audioContext.current.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.current.currentTime + 0.3);
-
-    oscillator.start();
-    oscillator.stop(audioContext.current.currentTime + 0.3);
-  }, []);
-
-  const calculatePerfection = useCallback((params: CharacterParameters) => {
-    let score = 0.2;
-
-    const variance = Math.abs(params.color - params.width) + 
-                    Math.abs(params.length - params.layers);
-    if (variance < 20) score += 0.2;
-
-    if (params.face === 4 && params.color > 80) score += 0.15;
-    if (params.face === 0 && params.length < 30) score += 0.15;
-
-    for (const combo of RARE_COMBINATIONS) {
-      if (combo.condition(params)) {
-        score = Math.max(score, combo.score);
-        break;
-      }
-    }
-
-    return Math.min(score, 1);
-  }, []);
-
   const triggerRareFormDiscovery = useCallback((combo: typeof RARE_COMBINATIONS[0]) => {
     setSoul(prev => ({
       ...prev,
@@ -144,22 +58,8 @@ export const usePoopSoul = () => {
       decorations: [...prev.decorations, combo.decoration]
     }));
 
-    if (audioContext.current) {
-      const oscillator = audioContext.current.createOscillator();
-      const gainNode = audioContext.current.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.current.destination);
-      
-      oscillator.frequency.setValueAtTime(523, audioContext.current.currentTime);
-      oscillator.frequency.setValueAtTime(659, audioContext.current.currentTime + 0.2);
-      oscillator.frequency.setValueAtTime(784, audioContext.current.currentTime + 0.4);
-      
-      gainNode.gain.setValueAtTime(0.2, audioContext.current.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.current.currentTime + 0.8);
-      
-      oscillator.start();
-      oscillator.stop(audioContext.current.currentTime + 0.8);
+    if (audioManager.current) {
+      audioManager.current.playRareFormSound();
     }
 
     setTimeout(() => {
@@ -201,8 +101,10 @@ export const usePoopSoul = () => {
       };
     });
 
-    playToneForValue(value, paramType);
-  }, [calculatePerfection, playToneForValue, triggerRareFormDiscovery]);
+    if (audioManager.current) {
+      audioManager.current.playToneForValue(value, paramType);
+    }
+  }, [triggerRareFormDiscovery]);
 
   const setParameters = useCallback((newParams: CharacterParameters) => {
     setSoul(prev => {
@@ -227,7 +129,7 @@ export const usePoopSoul = () => {
     setTimeout(() => {
       setSoul(current => ({ ...current, emotionState: 'idle' }));
     }, 2000);
-  }, [calculatePerfection, triggerRareFormDiscovery]);
+  }, [triggerRareFormDiscovery]);
 
   const generateReading = useCallback(() => {
     const { perfectionScore } = soul;

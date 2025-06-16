@@ -27,7 +27,7 @@ export const Scene3D: React.FC<Scene3DProps> = ({
   return (
     <div className="w-[185px] h-[154px] rounded-lg overflow-hidden bg-transparent">
       <Canvas
-        camera={{ position: [0, 0, 4], fov: 50 }} // Adjusted camera for larger model
+        camera={{ position: [0, 0, 3.5], fov: 55 }}
         style={{ background: 'transparent' }}
         gl={{ 
           alpha: true, 
@@ -37,27 +37,22 @@ export const Scene3D: React.FC<Scene3DProps> = ({
         }}
       >
         <Suspense fallback={null}>
-          {/* Enhanced lighting setup for better 3D appearance */}
-          <ambientLight intensity={0.5} />
+          {/* Enhanced lighting setup for better color visibility */}
+          <ambientLight intensity={0.6} />
           <directionalLight 
-            position={[5, 8, 5]} 
-            intensity={1.0}
+            position={[4, 6, 4]} 
+            intensity={1.2}
             castShadow
-            shadow-mapSize-width={2048}
-            shadow-mapSize-height={2048}
-            shadow-camera-far={50}
-            shadow-camera-left={-10}
-            shadow-camera-right={10}
-            shadow-camera-top={10}
-            shadow-camera-bottom={-10}
+            shadow-mapSize-width={1024}
+            shadow-mapSize-height={1024}
           />
-          <pointLight position={[-5, 3, 2]} intensity={0.4} color="#ffa500" />
-          <pointLight position={[5, -3, -2]} intensity={0.3} color="#87ceeb" />
+          <pointLight position={[-3, 2, 2]} intensity={0.5} color="#ffa500" />
+          <pointLight position={[3, -2, -2]} intensity={0.4} color="#87ceeb" />
           
-          {/* Rim lighting for better definition */}
+          {/* Additional lighting for better color definition */}
           <directionalLight 
-            position={[-3, 0, -5]} 
-            intensity={0.3} 
+            position={[-2, 0, -4]} 
+            intensity={0.4} 
             color="#ffffff"
           />
           
@@ -69,18 +64,18 @@ export const Scene3D: React.FC<Scene3DProps> = ({
             selectedFaceTexture={FACE_TEXTURES[parameters.face]}
           />
           
-          {/* Enhanced 3D controls */}
+          {/* Optimized 3D controls */}
           <OrbitControls
             enableZoom={true}
-            minDistance={3}
-            maxDistance={8}
+            minDistance={2.5}
+            maxDistance={6}
             enablePan={false}
-            maxPolarAngle={Math.PI * 0.75}
-            minPolarAngle={Math.PI * 0.25}
+            maxPolarAngle={Math.PI * 0.8}
+            minPolarAngle={Math.PI * 0.2}
             autoRotate={emotionState === 'proud'}
-            autoRotateSpeed={0.8}
+            autoRotateSpeed={1.0}
             enableDamping
-            dampingFactor={0.08}
+            dampingFactor={0.1}
           />
         </Suspense>
       </Canvas>

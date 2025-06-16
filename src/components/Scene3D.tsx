@@ -27,7 +27,7 @@ export const Scene3D: React.FC<Scene3DProps> = ({
   return (
     <div className="w-[185px] h-[154px] rounded-lg overflow-hidden bg-transparent">
       <Canvas
-        camera={{ position: [0, 0, 3.5], fov: 55 }}
+        camera={{ position: [0, 0, 4], fov: 50 }}
         style={{ background: 'transparent' }}
         gl={{ 
           alpha: true, 
@@ -37,22 +37,21 @@ export const Scene3D: React.FC<Scene3DProps> = ({
         }}
       >
         <Suspense fallback={null}>
-          {/* Enhanced lighting setup for better color visibility */}
-          <ambientLight intensity={0.6} />
+          {/* 优化的光照设置，确保颜色正确显示 */}
+          <ambientLight intensity={0.4} color="#ffffff" />
           <directionalLight 
-            position={[4, 6, 4]} 
-            intensity={1.2}
+            position={[3, 5, 3]} 
+            intensity={1.0}
+            color="#ffffff"
             castShadow
-            shadow-mapSize-width={1024}
-            shadow-mapSize-height={1024}
           />
-          <pointLight position={[-3, 2, 2]} intensity={0.5} color="#ffa500" />
-          <pointLight position={[3, -2, -2]} intensity={0.4} color="#87ceeb" />
+          <pointLight position={[-2, 2, 2]} intensity={0.6} color="#ffaa44" />
+          <pointLight position={[2, -1, -2]} intensity={0.4} color="#4488ff" />
           
-          {/* Additional lighting for better color definition */}
+          {/* 补充光源确保颜色可见 */}
           <directionalLight 
-            position={[-2, 0, -4]} 
-            intensity={0.4} 
+            position={[-1, 0, -3]} 
+            intensity={0.3} 
             color="#ffffff"
           />
           
@@ -64,18 +63,17 @@ export const Scene3D: React.FC<Scene3DProps> = ({
             selectedFaceTexture={FACE_TEXTURES[parameters.face]}
           />
           
-          {/* Optimized 3D controls */}
           <OrbitControls
             enableZoom={true}
             minDistance={2.5}
-            maxDistance={6}
+            maxDistance={7}
             enablePan={false}
-            maxPolarAngle={Math.PI * 0.8}
-            minPolarAngle={Math.PI * 0.2}
+            maxPolarAngle={Math.PI * 0.75}
+            minPolarAngle={Math.PI * 0.25}
             autoRotate={emotionState === 'proud'}
-            autoRotateSpeed={1.0}
+            autoRotateSpeed={0.8}
             enableDamping
-            dampingFactor={0.1}
+            dampingFactor={0.08}
           />
         </Suspense>
       </Canvas>

@@ -31,7 +31,12 @@ export const Poop3D: React.FC<Poop3DProps> = ({
   const faceRef = useRef<THREE.Mesh>(null);
   const { scene } = useThree();
 
-  // Face texture loader and positioning
+  // 调试颜色参数
+  React.useEffect(() => {
+    console.log('Poop3D Color Parameter:', parameters.color);
+  }, [parameters.color]);
+
+  // 面部纹理加载
   const faceTexture = React.useMemo(() => {
     if (!selectedFaceTexture) return null;
     
@@ -41,32 +46,31 @@ export const Poop3D: React.FC<Poop3DProps> = ({
     return texture;
   }, [selectedFaceTexture]);
 
-  // Enhanced lighting effects for high perfection
+  // 高完美度的特殊光照效果
   React.useEffect(() => {
     if (perfectionScore > 0.8) {
-      const light = new THREE.PointLight(0xffd700, 2.0, 12);
-      light.position.set(0, 3, 3);
-      scene.add(light);
+      const specialLight = new THREE.PointLight(0xffd700, 1.5, 10);
+      specialLight.position.set(0, 2, 2);
+      scene.add(specialLight);
       
-      // Add sparkle effect light
       if (perfectionScore > 0.9) {
-        const sparkleLight = new THREE.PointLight(0xffffff, 1.5, 8);
-        sparkleLight.position.set(2, 2, 2);
+        const sparkleLight = new THREE.PointLight(0xffffff, 1.0, 6);
+        sparkleLight.position.set(1.5, 1.5, 1.5);
         scene.add(sparkleLight);
         
         return () => {
-          scene.remove(light);
+          scene.remove(specialLight);
           scene.remove(sparkleLight);
         };
       }
       
       return () => {
-        scene.remove(light);
+        scene.remove(specialLight);
       };
     }
   }, [perfectionScore, scene]);
 
-  // Animate face for emotions
+  // 面部表情动画
   useFrame((state) => {
     if (faceRef.current) {
       const time = state.clock.getElapsedTime();
@@ -91,10 +95,10 @@ export const Poop3D: React.FC<Poop3DProps> = ({
         <Geometry3D parameters={parameters} />
       </Materials3D>
       
-      {/* Enhanced face overlay with better positioning */}
+      {/* 面部纹理覆盖 */}
       {faceTexture && (
-        <mesh ref={faceRef} position={[0, 0.2, 1.0]}>
-          <planeGeometry args={[1.0, 1.0]} />
+        <mesh ref={faceRef} position={[0, 0.3, 0.8]}>
+          <planeGeometry args={[0.8, 0.8]} />
           <meshBasicMaterial 
             map={faceTexture} 
             transparent 

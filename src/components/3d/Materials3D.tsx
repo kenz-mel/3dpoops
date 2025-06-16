@@ -12,30 +12,51 @@ export const Materials3D: React.FC<Materials3DProps> = ({
   perfectionScore, 
   children 
 }) => {
-  // Dynamic material based on color parameter - brown poop colors
+  // Dynamic material with full color spectrum - no restrictions
   const material = useMemo(() => {
-    // Map color parameter to brown spectrum
-    const brownHues = [
-      { h: 30, s: 0.8, l: 0.2 },   // Dark brown
-      { h: 35, s: 0.7, l: 0.3 },   // Medium brown  
-      { h: 40, s: 0.6, l: 0.4 },   // Light brown
-      { h: 45, s: 0.5, l: 0.5 },   // Tan
-      { h: 50, s: 0.8, l: 0.6 },   // Golden brown
-    ];
-    
-    const colorIndex = Math.floor((colorParameter / 100) * (brownHues.length - 1));
-    const selectedColor = brownHues[colorIndex];
+    // Map color parameter to full HSL spectrum
+    const hue = (colorParameter / 100) * 360; // Full 360 degree hue range
+    const saturation = 0.6 + (perfectionScore * 0.4); // Higher perfection = more saturated
+    const lightness = 0.3 + (perfectionScore * 0.3); // Higher perfection = brighter
     
     const color = new THREE.Color().setHSL(
-      selectedColor.h / 360, 
-      selectedColor.s, 
-      selectedColor.l
+      hue / 360, 
+      saturation, 
+      lightness
     );
+    
+    // Enhanced material properties
+    const material = new THREE.MeshPhongMaterial({
+      color: color,
+      shininess: 20 + (perfectionScore * 60), // More shine for perfect creations
+      specular: new THREE.Color(0x444444),
+      bumpScale: 0.1, // Add surface detail
+    });
+
+    // Add special effects for high perfection
+    if (perfectionScore > 0.8) {
+      material.emissive = new THREE.Color(color).multiplyScalar(0.1);
+      material.emissiveIntensity = perfectionScore * 0.3;
+    }
+
+    return material;
+  }, [colorParameter, perfectionScore]);
+
+  // Enhanced material for very high perfection scores
+  const specialMaterial = useMemo(() => {
+    if (perfectionScore < 0.9) return null;
+    
+    const hue = (colorParameter / 100) * 360;
+    const color = new THREE.Color().setHSL(hue / 360, 0.8, 0.6);
     
     return new THREE.MeshPhongMaterial({
       color: color,
-      shininess: 10 + (perfectionScore * 40),
-      specular: new THREE.Color(0x222222)
+      shininess: 100,
+      specular: new THREE.Color(0x888888),
+      emissive: new THREE.Color(color).multiplyScalar(0.2),
+      emissiveIntensity: 0.4,
+      transparent: true,
+      opacity: 0.95,
     });
   }, [colorParameter, perfectionScore]);
 
@@ -45,9 +66,17 @@ export const Materials3D: React.FC<Materials3DProps> = ({
         if (React.isValidElement(child) && child.type === 'primitive') {
           const geometry = child.props.object;
           if (geometry instanceof THREE.Group) {
-            geometry.children.forEach((mesh) => {
+            geometry.children.forEach((mesh, index) => {
               if (mesh instanceof THREE.Mesh) {
-                mesh.material = material;
+                // Use special material for legendary creations
+                mesh.material = perfectionScore > 0.9 && specialMaterial ? specialMaterial : material;
+                
+                // Add subtle material variation per layer
+                if (mesh.material instanceof THREE.MeshPhongMaterial) {
+                  const variation = Math.sin(index * 0.5) * 0.1;
+                  const originalColor = mesh.material.color.clone();
+                  mesh.material.color.multiplyScalar(1 + variation);
+                }
               }
             });
           }

@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { useThree } from '@react-three/fiber';
+import { useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { EmotionState } from '../hooks/usePoopSoul';
 import { Geometry3D } from './3d/Geometry3D';
@@ -41,12 +41,24 @@ export const Poop3D: React.FC<Poop3DProps> = ({
     return texture;
   }, [selectedFaceTexture]);
 
-  // Add lighting effects for high perfection
+  // Enhanced lighting effects for high perfection
   React.useEffect(() => {
     if (perfectionScore > 0.8) {
-      const light = new THREE.PointLight(0xffd700, 1.5, 8);
-      light.position.set(0, 2, 2);
+      const light = new THREE.PointLight(0xffd700, 2.0, 12);
+      light.position.set(0, 3, 3);
       scene.add(light);
+      
+      // Add sparkle effect light
+      if (perfectionScore > 0.9) {
+        const sparkleLight = new THREE.PointLight(0xffffff, 1.5, 8);
+        sparkleLight.position.set(2, 2, 2);
+        scene.add(sparkleLight);
+        
+        return () => {
+          scene.remove(light);
+          scene.remove(sparkleLight);
+        };
+      }
       
       return () => {
         scene.remove(light);
@@ -54,16 +66,35 @@ export const Poop3D: React.FC<Poop3DProps> = ({
     }
   }, [perfectionScore, scene]);
 
+  // Animate face for emotions
+  useFrame((state) => {
+    if (faceRef.current) {
+      const time = state.clock.getElapsedTime();
+      
+      switch (emotionState) {
+        case 'happy':
+          faceRef.current.scale.setScalar(1 + Math.sin(time * 4) * 0.05);
+          break;
+        case 'excited':
+          faceRef.current.rotation.z = Math.sin(time * 6) * 0.1;
+          break;
+        default:
+          faceRef.current.scale.setScalar(1);
+          faceRef.current.rotation.z = 0;
+      }
+    }
+  });
+
   return (
     <Animations3D emotionState={emotionState}>
       <Materials3D colorParameter={parameters.color} perfectionScore={perfectionScore}>
         <Geometry3D parameters={parameters} />
       </Materials3D>
       
-      {/* Face overlay positioned on the front */}
+      {/* Enhanced face overlay with better positioning */}
       {faceTexture && (
-        <mesh ref={faceRef} position={[0, 0.1, 0.6]}>
-          <planeGeometry args={[0.6, 0.6]} />
+        <mesh ref={faceRef} position={[0, 0.2, 1.0]}>
+          <planeGeometry args={[1.0, 1.0]} />
           <meshBasicMaterial 
             map={faceTexture} 
             transparent 

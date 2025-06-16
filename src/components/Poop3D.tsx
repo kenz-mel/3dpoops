@@ -29,9 +29,15 @@ export const Poop3D: React.FC<Poop3DProps> = ({
   selectedFaceTexture
 }) => {
   const faceRef = useRef<THREE.Mesh>(null);
+  const geometryRef = useRef<THREE.Group>(null);
   const { scene } = useThree();
 
-  // Face texture loader and positioning
+  // 调试颜色参数
+  React.useEffect(() => {
+    console.log('Poop3D Color Parameter Changed:', parameters.color);
+  }, [parameters.color]);
+
+  // 面部纹理加载
   const faceTexture = React.useMemo(() => {
     if (!selectedFaceTexture) return null;
     
@@ -41,32 +47,44 @@ export const Poop3D: React.FC<Poop3DProps> = ({
     return texture;
   }, [selectedFaceTexture]);
 
-  // Enhanced lighting effects for high perfection
-  React.useEffect(() => {
-    if (perfectionScore > 0.8) {
-      const light = new THREE.PointLight(0xffd700, 2.0, 12);
-      light.position.set(0, 3, 3);
-      scene.add(light);
+  // 直接创建带材质的几何体
+  const poopGeometry = React.useMemo(() => {
+    const layerCount = Math.max(2, Math.floor(parameters.layers / 20) + 2);
+    const group = new THREE.Group();
+    
+    // 创建材质
+    const hue = (parameters.color / 100) * 360;
+    const color = new THREE.Color().setHSL(hue / 360, 0.8, 0.5);
+    const material = new THREE.MeshPhongMaterial({
+      color: color,
+      shininess: 30,
+      specular: new THREE.Color(0x111111),
+    });
+    
+    console.log('Creating geometry with color:', color.getHexString());
+    
+    for (let layer = 0; layer < layerCount; layer++) {
+      const baseRadius = 0.5;
+      const radiusTop = baseRadius + (parameters.width / 100) * 0.4 - (layer * 0.06);
+      const radiusBottom = baseRadius + 0.15 + (parameters.width / 100) * 0.5 - (layer * 0.06);
+      const height = (0.4 + (parameters.length / 100) * 0.6) / layerCount;
       
-      // Add sparkle effect light
-      if (perfectionScore > 0.9) {
-        const sparkleLight = new THREE.PointLight(0xffffff, 1.5, 8);
-        sparkleLight.position.set(2, 2, 2);
-        scene.add(sparkleLight);
-        
-        return () => {
-          scene.remove(light);
-          scene.remove(sparkleLight);
-        };
-      }
+      const segments = 20;
+      const layerGeo = new THREE.CylinderGeometry(radiusTop, radiusBottom, height, segments);
       
-      return () => {
-        scene.remove(light);
-      };
+      // 创建网格并直接应用材质
+      const layerMesh = new THREE.Mesh(layerGeo, material.clone());
+      layerMesh.position.y = layer * height - (layerCount * height) / 2;
+      layerMesh.rotation.y = layer * 0.3;
+      
+      group.add(layerMesh);
     }
-  }, [perfectionScore, scene]);
+    
+    group.scale.setScalar(1.2);
+    return group;
+  }, [parameters.color, parameters.length, parameters.width, parameters.layers]);
 
-  // Animate face for emotions
+  // 面部表情动画
   useFrame((state) => {
     if (faceRef.current) {
       const time = state.clock.getElapsedTime();
@@ -87,14 +105,12 @@ export const Poop3D: React.FC<Poop3DProps> = ({
 
   return (
     <Animations3D emotionState={emotionState}>
-      <Materials3D colorParameter={parameters.color} perfectionScore={perfectionScore}>
-        <Geometry3D parameters={parameters} />
-      </Materials3D>
+      <primitive object={poopGeometry} ref={geometryRef} />
       
-      {/* Enhanced face overlay with better positioning */}
+      {/* 面部纹理覆盖 */}
       {faceTexture && (
-        <mesh ref={faceRef} position={[0, 0.2, 1.0]}>
-          <planeGeometry args={[1.0, 1.0]} />
+        <mesh ref={faceRef} position={[0, 0.3, 0.8]}>
+          <planeGeometry args={[0.8, 0.8]} />
           <meshBasicMaterial 
             map={faceTexture} 
             transparent 

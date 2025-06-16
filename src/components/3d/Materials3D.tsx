@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 
 interface Materials3DProps {
@@ -12,12 +12,12 @@ export const Materials3D: React.FC<Materials3DProps> = ({
   perfectionScore, 
   children 
 }) => {
-  // Dynamic material with full color spectrum - no restrictions
+  // 创建动态材质，确保颜色变化明显
   const material = useMemo(() => {
-    // Map color parameter to full HSL spectrum
-    const hue = (colorParameter / 100) * 360; // Full 360 degree hue range
-    const saturation = 0.6 + (perfectionScore * 0.4); // Higher perfection = more saturated
-    const lightness = 0.3 + (perfectionScore * 0.3); // Higher perfection = brighter
+    // 将颜色参数映射到完整的HSL色谱
+    const hue = (colorParameter / 100) * 360;
+    const saturation = 0.8; // 固定高饱和度
+    const lightness = 0.5; // 固定中等亮度
     
     const color = new THREE.Color().setHSL(
       hue / 360, 
@@ -25,64 +25,44 @@ export const Materials3D: React.FC<Materials3DProps> = ({
       lightness
     );
     
-    // Enhanced material properties
-    const material = new THREE.MeshPhongMaterial({
-      color: color,
-      shininess: 20 + (perfectionScore * 60), // More shine for perfect creations
-      specular: new THREE.Color(0x444444),
-      bumpScale: 0.1, // Add surface detail
-    });
-
-    // Add special effects for high perfection
-    if (perfectionScore > 0.8) {
-      material.emissive = new THREE.Color(color).multiplyScalar(0.1);
-      material.emissiveIntensity = perfectionScore * 0.3;
-    }
-
-    return material;
-  }, [colorParameter, perfectionScore]);
-
-  // Enhanced material for very high perfection scores
-  const specialMaterial = useMemo(() => {
-    if (perfectionScore < 0.9) return null;
-    
-    const hue = (colorParameter / 100) * 360;
-    const color = new THREE.Color().setHSL(hue / 360, 0.8, 0.6);
+    console.log(`Material Debug - Color Param: ${colorParameter}, Hue: ${hue}, Final Color: #${color.getHexString()}`);
     
     return new THREE.MeshPhongMaterial({
       color: color,
-      shininess: 100,
-      specular: new THREE.Color(0x888888),
-      emissive: new THREE.Color(color).multiplyScalar(0.2),
-      emissiveIntensity: 0.4,
-      transparent: true,
-      opacity: 0.95,
+      shininess: 30,
+      specular: new THREE.Color(0x111111),
+      // 确保材质不透明且可见
+      transparent: false,
+      opacity: 1.0,
+      side: THREE.FrontSide,
     });
   }, [colorParameter, perfectionScore]);
 
-  return (
-    <>
-      {React.Children.map(children, (child) => {
-        if (React.isValidElement(child) && child.type === 'primitive') {
-          const geometry = child.props.object;
-          if (geometry instanceof THREE.Group) {
-            geometry.children.forEach((mesh, index) => {
-              if (mesh instanceof THREE.Mesh) {
-                // Use special material for legendary creations
-                mesh.material = perfectionScore > 0.9 && specialMaterial ? specialMaterial : material;
-                
-                // Add subtle material variation per layer
-                if (mesh.material instanceof THREE.MeshPhongMaterial) {
-                  const variation = Math.sin(index * 0.5) * 0.1;
-                  const originalColor = mesh.material.color.clone();
-                  mesh.material.color.multiplyScalar(1 + variation);
-                }
-              }
-            });
-          }
+  // 应用材质到几何体
+  useEffect(() => {
+    const applyMaterialToGeometry = (object: THREE.Object3D) => {
+      if (object instanceof THREE.Mesh) {
+        // 直接设置材质
+        object.material = material.clone();
+        console.log('Applied material to mesh:', object.material);
+      }
+      
+      // 递归处理子对象
+      object.children.forEach(child => {
+        applyMaterialToGeometry(child);
+      });
+    };
+
+    // 查找并应用材质到所有几何体
+    React.Children.forEach(children, (child) => {
+      if (React.isValidElement(child) && child.type === 'primitive') {
+        const geometry = child.props.object;
+        if (geometry instanceof THREE.Group) {
+          applyMaterialToGeometry(geometry);
         }
-        return child;
-      })}
-    </>
-  );
+      }
+    });
+  }, [material, children]);
+
+  return <>{children}</>;
 };
